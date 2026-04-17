@@ -314,6 +314,120 @@ namespace ExpenseTracker.Controllers
         }
 
 
+        [HttpGet("get-user-profile/{userId}")]
+        public IActionResult GetUserProfile(int userId)
+        {
+            DataTable dt = new DataTable();
 
+            using (SqlConnection con = new SqlConnection(_configuration.GetConnectionString("Default")))
+            {
+                SqlCommand cmd = new SqlCommand("GetUserProfile", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@UserId", userId);
+
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                da.Fill(dt);
+            }
+
+            var user = dt.AsEnumerable().Select(row => new
+            {
+                Id = row["Id"],
+                Name = row["Name"],
+                Email = row["Email"],
+                CreatedAt = row["CreatedAt"]
+            }).FirstOrDefault();
+
+            return Ok(user);
+        }
+
+        [HttpPut("update-profile")]
+        public IActionResult UpdateProfile(UserModel model)
+        {
+            using (SqlConnection con = new SqlConnection(_configuration.GetConnectionString("Default")))
+            {
+                SqlCommand cmd = new SqlCommand("UpdateUserProfile", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@UserId", model.Id);
+                cmd.Parameters.AddWithValue("@Name", model.Name);
+                cmd.Parameters.AddWithValue("@Email", model.Email);
+
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
+
+            return Ok(new
+            {
+                message = "Profile Updated Successfully"
+            });
+        }
+
+        [HttpPut("change-password")]
+        public IActionResult ChangePassword(ChangePasswordDto model)
+        {
+            using (SqlConnection con = new SqlConnection(_configuration.GetConnectionString("Default")))
+            {
+                SqlCommand cmd = new SqlCommand("ChangePassword", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@UserId", model.Id);
+                cmd.Parameters.AddWithValue("@CurrentPassword", model.CurrentPassword);
+                cmd.Parameters.AddWithValue("@NewPassword", model.NewPassword);
+
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
+
+            return Ok(new
+            {
+                message = "Password Changed Successfully"
+            });
+        }
+
+
+        [HttpDelete("clear-user-data/{userId}")]
+        public IActionResult ClearUserData(int userId)
+        {
+            using (SqlConnection con = new SqlConnection(_configuration.GetConnectionString("Default")))
+            {
+                SqlCommand cmd = new SqlCommand("ClearUserData", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@UserId", userId);
+
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
+
+            return Ok(new
+            {
+                message = "All Expense and Income Data Cleared"
+            });
+        }
+
+        [HttpDelete("delete-user/{userId}")]
+        public IActionResult DeleteUser(int userId)
+        {
+            using (SqlConnection con = new SqlConnection(_configuration.GetConnectionString("Default")))
+            {
+                SqlCommand cmd = new SqlCommand("DeleteUserAccount", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@UserId", userId);
+
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
+
+            return Ok(new
+            {
+                message = "User Account Deleted Successfully"
+            });
+        }
     }
 }
