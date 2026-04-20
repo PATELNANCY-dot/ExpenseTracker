@@ -16,7 +16,7 @@ namespace ExpenseTracker.Controllers
             _configuration = configuration;
         }
 
-        // 🔐 REGISTER USER
+        //  REGISTER USER
         [HttpPost("register")]
         public IActionResult Register(UserModel model)
         {
@@ -82,7 +82,7 @@ namespace ExpenseTracker.Controllers
             });
         }
 
-        // ➕ ADD EXPENSE
+        //  ADD EXPENSE
         [HttpPost("add-expense")]
         public IActionResult AddExpense(ExpenseModel model)
         {
@@ -146,7 +146,7 @@ namespace ExpenseTracker.Controllers
             return Ok(expenses);
         }
 
-        // ❌ DELETE EXPENSE
+        // DELETE EXPENSE
         [HttpDelete("delete-expense/{id}")]
         public IActionResult DeleteExpense(int id)
         {
