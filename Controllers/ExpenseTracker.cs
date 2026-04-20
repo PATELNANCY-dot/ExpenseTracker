@@ -429,5 +429,54 @@ namespace ExpenseTracker.Controllers
                 message = "User Account Deleted Successfully"
             });
         }
+
+        [HttpPost("save-theme")]
+        public IActionResult SaveTheme(ThemeModel model)
+        {
+            using (SqlConnection con = new SqlConnection(_configuration.GetConnectionString("Default")))
+            {
+                SqlCommand cmd = new SqlCommand("sp_SaveUserTheme", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@UserId", model.UserId);
+                cmd.Parameters.AddWithValue("@DarkMode", model.DarkMode);
+
+                con.Open();
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
+
+            return Ok(new
+            {
+                message = "Theme Saved Successfully"
+            });
+        }
+
+        [HttpGet("get-theme/{userId}")]
+        public IActionResult GetTheme(int userId)
+        {
+            DataTable dt = new DataTable();
+
+            using (SqlConnection con = new SqlConnection(_configuration.GetConnectionString("Default")))
+            {
+                SqlCommand cmd = new SqlCommand("sp_GetUserTheme", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@UserId", userId);
+
+                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                da.Fill(dt);
+            }
+
+            var result = dt.AsEnumerable().Select(row => new
+            {
+                DarkMode = row["DarkMode"]
+            }).FirstOrDefault();
+
+            return Ok(result);
+        }
+
+
+
     }
 }
