@@ -1,5 +1,9 @@
 var builder = WebApplication.CreateBuilder(args);
 
+// IMPORTANT: Render port binding
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 // API ONLY
 builder.Services.AddControllers();
 
@@ -31,12 +35,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseRouting();   // IMPORTANT
+app.UseRouting();
 
 app.UseCors("AllowAngular");
 
 app.UseAuthorization();
 
-app.MapControllers();   // ONLY THIS
+app.MapControllers();
 
 app.Run();
