@@ -482,5 +482,20 @@ namespace ExpenseTracker.Controllers
             return Ok("API WORKING");
         }
 
+        [HttpGet("db-test")]
+        public IActionResult DbTest()
+        {
+            try
+            {
+                using var con = new SqlConnection(_configuration.GetConnectionString("Default"));
+                con.Open();
+                return Ok("DB CONNECTED");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
     }
 }
