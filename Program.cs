@@ -1,13 +1,13 @@
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
+// Add services
+builder.Services.AddControllers();
 
-// Swagger services
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// CORS CONFIGURATION
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular",
@@ -24,33 +24,19 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Enable Swagger middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();
-}
-
 app.UseHttpsRedirection();
-app.UseRouting();
 
-// ENABLE CORS
 app.UseCors("AllowAngular");
 
 app.UseAuthorization();
 
-app.MapStaticAssets();
-
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
+//  IMPORTANT
+app.MapControllers();
 
 app.Run();
