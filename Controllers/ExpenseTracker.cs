@@ -476,7 +476,11 @@ namespace ExpenseTracker.Controllers
             return Ok(result);
         }
 
-
+        [HttpGet("test")]
+        public IActionResult Test()
+        {
+            return Ok("API WORKING");
+        }
 
     }
 }
