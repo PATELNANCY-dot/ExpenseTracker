@@ -2,7 +2,6 @@
 WORKDIR /src
 
 COPY . .
-
 RUN dotnet restore
 RUN dotnet publish -c Release -o /app/publish
 
@@ -11,7 +10,7 @@ WORKDIR /app
 
 COPY --from=build /app/publish .
 
-ENV ASPNETCORE_URLS=http://0.0.0.0:8080
+ENV ASPNETCORE_URLS=http://0.0.0.0:$PORT
 
 EXPOSE 8080
 
