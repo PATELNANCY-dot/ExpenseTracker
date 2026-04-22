@@ -184,6 +184,18 @@ namespace ExpenseTracker.Controllers
                 });
             }
         }
+
+
+        [HttpGet("debug-full-conn")]
+        public IActionResult DebugFullConn()
+        {
+            var conn = _configuration.GetConnectionString("Default");
+
+            return Ok(new
+            {
+                conn
+            });
+        }
     }  
 
 
