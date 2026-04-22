@@ -1,9 +1,15 @@
-﻿namespace ExpenseTracker.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace ExpenseTracker.Models
 {
     public class ChangePasswordDto
     {
         public int Id { get; set; }
-        public string CurrentPassword { get; set; }
-        public string NewPassword { get; set; }
+
+        [Required]
+        public string CurrentPassword { get; set; } = string.Empty;
+
+        [Required]
+        public string NewPassword { get; set; } = string.Empty;
     }
 }
