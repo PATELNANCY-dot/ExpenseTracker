@@ -3,54 +3,81 @@ using ExpenseTracker.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// IMPORTANT: Render port binding
+
+// Render PORT BINDING
+
 var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
-// Controllers
+
+// CONTROLLERS
+
 builder.Services.AddControllers();
 
-// PostgreSQL Database (Supabase)
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
-// CORS for Angular
+// CONNECTION STRING (SAFE HANDLING)
+
+var conn = builder.Configuration.GetConnectionString("Default");
+
+// DEBUG (will show in Render logs)
+Console.WriteLine("DB CONNECTION STRING: " + conn);
+
+// FAIL FAST if missing (VERY IMPORTANT for Render debugging)
+if (string.IsNullOrWhiteSpace(conn))
+{
+    throw new Exception(" Connection string 'Default' is missing. Check Render Environment Variables.");
+}
+
+// ================================
+// DATABASE (PostgreSQL - Supabase)
+// ================================
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(conn));
+
+// ================================
+// CORS (Angular frontend)
+// ================================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
         policy.WithOrigins(
             "http://localhost:4200",
-            "https://adorable-travesseiro-9337e2.netlify.app"
+            "https://adorable-travesseiro-9337e2.netlify.app" // your Angular production URL
         )
         .AllowAnyHeader()
         .AllowAnyMethod();
     });
 });
 
-// Swagger
+// ================================
+// SWAGGER
+// ================================
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Enable Swagger (removed Development condition)
+// ================================
+// MIDDLEWARE
+// ================================
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// Routing
 app.UseRouting();
 
-// Enable CORS
 app.UseCors("AllowAngular");
 
-// Authorization
 app.UseAuthorization();
 
-// Map controllers
-app.MapControllers();
-
-// Test route
+// ================================
+// TEST ROUTE
+// ================================
 app.MapGet("/", () => "ExpenseTracker API is running!");
+
+// ================================
+// CONTROLLERS
+// ================================
+app.MapControllers();
 
 app.Run();
