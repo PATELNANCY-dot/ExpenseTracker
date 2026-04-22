@@ -148,18 +148,23 @@ namespace ExpenseTracker.Controllers
         {
             try
             {
+                var connStr = _configuration.GetConnectionString("Default");
+
+                if (string.IsNullOrEmpty(connStr))
+                {
+                    return StatusCode(500, "Connection string is NULL or EMPTY");
+                }
+
                 DataTable dt = new DataTable();
 
-                using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("Default")))
+                using (NpgsqlConnection con = new NpgsqlConnection(connStr))
                 {
                     con.Open();
 
                     using (NpgsqlCommand cmd = new NpgsqlCommand("SELECT * FROM users", con))
+                    using (NpgsqlDataAdapter da = new NpgsqlDataAdapter(cmd))
                     {
-                        using (NpgsqlDataAdapter da = new NpgsqlDataAdapter(cmd))
-                        {
-                            da.Fill(dt);
-                        }
+                        da.Fill(dt);
                     }
                 }
 
@@ -175,7 +180,7 @@ namespace ExpenseTracker.Controllers
                 return StatusCode(500, new
                 {
                     success = false,
-                    message = ex.Message
+                    error = ex.ToString()
                 });
             }
         }
