@@ -39,44 +39,61 @@ namespace ExpenseTracker.Controllers
 
         // LOGIN USER  
         [HttpPost("login")]
-        public IActionResult Login(UserModel model)
+        public IActionResult Login(LoginDto model)
         {
-            DataTable dt = new DataTable();
-
-            using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("Default")))
+            try
             {
-                NpgsqlCommand cmd = new NpgsqlCommand("sp_LoginUser", con);
-                cmd.CommandType = CommandType.StoredProcedure;
+                DataTable dt = new DataTable();
 
-                cmd.Parameters.AddWithValue("@Email", model.Email ?? "");
-                cmd.Parameters.AddWithValue("@Password", model.Password ?? "");
-
-                NpgsqlDataAdapter da = new NpgsqlDataAdapter(cmd);
-                da.Fill(dt);
-            }
-
-            if (dt.Rows.Count > 0)
-            {
-                var user = dt.AsEnumerable().Select(row => new
+                using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("Default")))
                 {
-                    Id = row["Id"],
-                    Name = row["Name"],
-                    Email = row["Email"]
-                }).FirstOrDefault();
+                    con.Open();
 
-                return Ok(new
+                    string query = "SELECT * FROM users WHERE email = @Email AND password = @Password";
+
+                    using (NpgsqlCommand cmd = new NpgsqlCommand(query, con))
+                    {
+                        cmd.Parameters.AddWithValue("@Email", model.Email);
+                        cmd.Parameters.AddWithValue("@Password", model.Password);
+
+                        using (NpgsqlDataAdapter da = new NpgsqlDataAdapter(cmd))
+                        {
+                            da.Fill(dt);
+                        }
+                    }
+                }
+
+                if (dt.Rows.Count > 0)
                 {
-                    success = true,
-                    message = "Login Successful",
-                    data = user
+                    var user = dt.AsEnumerable().Select(row => new
+                    {
+                        Id = row["id"],
+                        Name = row["name"],
+                        Email = row["email"]
+                    }).FirstOrDefault();
+
+                    return Ok(new
+                    {
+                        success = true,
+                        message = "Login Successful",
+                        data = user
+                    });
+                }
+
+                return Unauthorized(new
+                {
+                    success = false,
+                    message = "Invalid Credentials"
                 });
             }
-
-            return Unauthorized(new
+            catch (Exception ex)
             {
-                success = false,
-                message = "Invalid Credentials"
-            });
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
         }
 
         // ADD EXPENSE  
@@ -122,6 +139,44 @@ namespace ExpenseTracker.Controllers
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+
+
+        [HttpGet("test-users")]
+        public IActionResult GetUsers()
+        {
+            try
+            {
+                DataTable dt = new DataTable();
+
+                using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("Default")))
+                {
+                    con.Open();
+
+                    using (NpgsqlCommand cmd = new NpgsqlCommand("SELECT * FROM users", con))
+                    {
+                        using (NpgsqlDataAdapter da = new NpgsqlDataAdapter(cmd))
+                        {
+                            da.Fill(dt);
+                        }
+                    }
+                }
+
+                return Ok(new
+                {
+                    success = true,
+                    count = dt.Rows.Count,
+                    data = dt
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = ex.Message
+                });
             }
         }
     }  
