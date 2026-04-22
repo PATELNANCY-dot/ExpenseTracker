@@ -34,13 +34,9 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-
-// Enable Swagger only in development
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Enable Swagger (removed Development condition)
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // Routing
 app.UseRouting();
@@ -54,6 +50,7 @@ app.UseAuthorization();
 // Map controllers
 app.MapControllers();
 
+// Test route
 app.MapGet("/", () => "ExpenseTracker API is running!");
 
 app.Run();
