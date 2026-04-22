@@ -54,4 +54,6 @@ app.UseAuthorization();
 // Map controllers
 app.MapControllers();
 
+app.MapGet("/", () => "ExpenseTracker API is running!");
+
 app.Run();
