@@ -21,10 +21,6 @@ var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 
 Console.WriteLine("DB connection loaded");
 
-if (string.IsNullOrWhiteSpace(conn))
-{
-    throw new Exception("Connection string 'DefaultConnection' is missing.");
-}
 
 // ================================
 // DATABASE (PostgreSQL)
