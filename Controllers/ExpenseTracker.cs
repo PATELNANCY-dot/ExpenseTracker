@@ -99,7 +99,8 @@ namespace ExpenseTracker.Controllers
                 con.Open();
                 cmd.ExecuteNonQuery();
 
-                return Ok("Expense Added");
+
+                return Ok(new { message = "Expense Added" });
             }
             catch (Exception ex)
             {
@@ -127,7 +128,8 @@ namespace ExpenseTracker.Controllers
                 con.Open();
                 cmd.ExecuteNonQuery();
 
-                return Ok("Income Added");
+                
+                return Ok(new { message = "Income Added" });
             }
             catch (Exception ex)
             {
@@ -281,7 +283,8 @@ namespace ExpenseTracker.Controllers
                 con.Open();
                 cmd.ExecuteNonQuery();
 
-                return Ok("Deleted");
+
+                return Ok(new { message = "Deleted" });
             }
             catch (Exception ex)
             {
@@ -304,7 +307,8 @@ namespace ExpenseTracker.Controllers
                 new NpgsqlCommand("DELETE FROM income WHERE userid=@id", con)
                 { Parameters = { new NpgsqlParameter("@id", id) } }.ExecuteNonQuery();
 
-                return Ok("Data Cleared");
+
+                return Ok(new { message = "Data Cleared" });
             }
             catch (Exception ex)
             {
@@ -406,8 +410,27 @@ namespace ExpenseTracker.Controllers
 
             con.Open();
             cmd.ExecuteNonQuery();
+            return Ok(new { message = "Updated" });
+        }
 
-            return Ok("Updated");
+        [HttpPut("update-profile")]
+        public IActionResult UpdateProfile(UserModel model)
+        {
+            using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+
+            var cmd = new NpgsqlCommand(@"
+        UPDATE users 
+        SET name=@n, email=@e 
+        WHERE id=@id", con);
+
+            cmd.Parameters.AddWithValue("@n", model.Name);
+            cmd.Parameters.AddWithValue("@e", model.Email);
+            cmd.Parameters.AddWithValue("@id", model.Id);
+
+            con.Open();
+            cmd.ExecuteNonQuery();
+
+            return Ok(new { message = "Profile Updated" });
         }
     }
 }
