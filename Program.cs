@@ -19,6 +19,11 @@ builder.Services.AddControllers();
 // ================================
 var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 
+if (string.IsNullOrEmpty(conn))
+{
+    throw new Exception("Database connection string not found.");
+}
+
 Console.WriteLine("DB connection loaded");
 
 // ================================
@@ -58,12 +63,11 @@ app.UseRouting();
 
 app.UseCors("AllowAngular");
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger enabled for production also
+app.UseSwagger();
+app.UseSwaggerUI();
 
+// Authorization
 app.UseAuthorization();
 
 // ================================
