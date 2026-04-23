@@ -432,5 +432,65 @@ namespace ExpenseTracker.Controllers
 
             return Ok(new { message = "Profile Updated" });
         }
+
+        [HttpPut("update-income/{id}")]
+        public IActionResult UpdateIncome(long id, IncomeModel model)
+        {
+            using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+
+            var cmd = new NpgsqlCommand(@"
+        UPDATE income
+        SET title=@t, amount=@a, incomedate=@d
+        WHERE id=@id", con);
+
+            cmd.Parameters.AddWithValue("@t", model.Title);
+            cmd.Parameters.AddWithValue("@a", model.Amount);
+            cmd.Parameters.AddWithValue("@d", model.IncomeDate);
+            cmd.Parameters.AddWithValue("@id", id);
+
+            con.Open();
+            cmd.ExecuteNonQuery();
+
+            return Ok(new { message = "Income Updated" });
+        }
+
+        [HttpPut("change-password")]
+        public IActionResult ChangePassword(ChangePasswordDto model)
+        {
+            try
+            {
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+                con.Open();
+
+                // 1. Check current password
+                var checkCmd = new NpgsqlCommand(
+                    "SELECT password FROM users WHERE id = @id", con);
+
+                checkCmd.Parameters.AddWithValue("@id", model.Id);
+
+                var dbPassword = checkCmd.ExecuteScalar()?.ToString();
+
+                if (dbPassword == null)
+                    return NotFound(new { message = "User not found" });
+
+                if (dbPassword != model.CurrentPassword)
+                    return BadRequest(new { message = "Current password is incorrect" });
+
+                // 2. Update password
+                var updateCmd = new NpgsqlCommand(
+                    "UPDATE users SET password = @newPass WHERE id = @id", con);
+
+                updateCmd.Parameters.AddWithValue("@newPass", model.NewPassword);
+                updateCmd.Parameters.AddWithValue("@id", model.Id);
+
+                updateCmd.ExecuteNonQuery();
+
+                return Ok(new { message = "Password changed successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
     }
 }
