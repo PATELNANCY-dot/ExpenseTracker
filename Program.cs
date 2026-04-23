@@ -19,7 +19,7 @@ builder.Services.AddControllers();
 // ================================
 var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 
-Console.WriteLine("DB CONNECTION STRING: " + conn);
+Console.WriteLine("DB connection loaded");
 
 if (string.IsNullOrWhiteSpace(conn))
 {
