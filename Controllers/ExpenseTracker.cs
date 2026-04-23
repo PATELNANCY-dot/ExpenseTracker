@@ -493,5 +493,57 @@ namespace ExpenseTracker.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpDelete("delete-income/{id}")]
+        public IActionResult DeleteIncome(int id)
+        {
+            try
+            {
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+                con.Open();
+
+                var cmd = new NpgsqlCommand(
+                    "DELETE FROM income WHERE id = @id", con);
+
+                cmd.Parameters.AddWithValue("@id", id);
+
+                int rows = cmd.ExecuteNonQuery();
+
+                if (rows == 0)
+                    return NotFound("Income not found");
+
+                return Ok(new { message = "Income deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpDelete("delete-expense/{id}")]
+        public IActionResult DeleteExpense(int id)
+        {
+            try
+            {
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+                con.Open();
+
+                var cmd = new NpgsqlCommand(
+                    "DELETE FROM expenses WHERE id = @id", con);
+
+                cmd.Parameters.AddWithValue("@id", id);
+
+                int rows = cmd.ExecuteNonQuery();
+
+                if (rows == 0)
+                    return NotFound("Expense not found");
+
+                return Ok(new { message = "Expense deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
     }
 }
