@@ -21,7 +21,7 @@ namespace ExpenseTracker.Controllers
         [HttpPost("register")]
         public IActionResult Register(UserModel model)
         {
-            using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("Default")))
+            using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 NpgsqlCommand cmd = new NpgsqlCommand("sp_RegisterUser", con);
                 cmd.CommandType = CommandType.StoredProcedure;
@@ -45,7 +45,7 @@ namespace ExpenseTracker.Controllers
             {
                 DataTable dt = new DataTable();
 
-                using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("Default")))
+                using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection")))
                 {
                     con.Open();
 
@@ -100,7 +100,7 @@ namespace ExpenseTracker.Controllers
         [HttpPost("add-expense")]
         public IActionResult AddExpense(ExpenseModel model)
         {
-            using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("Default")))
+            using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection")))
             {
                 NpgsqlCommand cmd = new NpgsqlCommand("sp_AddExpense", con);
                 cmd.CommandType = CommandType.StoredProcedure;
@@ -132,7 +132,7 @@ namespace ExpenseTracker.Controllers
         {
             try
             {
-                using var con = new NpgsqlConnection(_configuration.GetConnectionString("Default"));
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
                 con.Open();
                 return Ok("DB CONNECTED");
             }
@@ -148,7 +148,7 @@ namespace ExpenseTracker.Controllers
         {
             try
             {
-                var connStr = _configuration.GetConnectionString("Default");
+                var connStr = _configuration.GetConnectionString("DefaultConnection");
 
                 if (string.IsNullOrEmpty(connStr))
                 {
@@ -189,7 +189,7 @@ namespace ExpenseTracker.Controllers
         [HttpGet("debug-full-conn")]
         public IActionResult DebugFullConn()
         {
-            var conn = _configuration.GetConnectionString("Default");
+            var conn = _configuration.GetConnectionString("DefaultConnection");
 
             return Ok(new
             {
