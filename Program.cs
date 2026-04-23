@@ -3,47 +3,45 @@ using ExpenseTracker.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-// Render PORT BINDING
-
+// ================================
+// RENDER PORT BINDING
+// ================================
 var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+builder.WebHost.UseUrls($"[http://0.0.0.0:{port}](http://0.0.0.0:{port})");
 
-
-// CONTROLLERS
-
+// ================================
+// SERVICES
+// ================================
 builder.Services.AddControllers();
 
-
-// CONNECTION STRING (SAFE HANDLING)
-
+// ================================
+// CONNECTION STRING
+// ================================
 var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// DEBUG (will show in Render logs)
 Console.WriteLine("DB CONNECTION STRING: " + conn);
 
-// FAIL FAST if missing (VERY IMPORTANT for Render debugging)
 if (string.IsNullOrWhiteSpace(conn))
 {
-    throw new Exception(" Connection string 'Default' is missing. Check Render Environment Variables.");
+    throw new Exception("Connection string 'DefaultConnection' is missing.");
 }
 
 // ================================
-// DATABASE (PostgreSQL - Supabase)
+// DATABASE (PostgreSQL)
 // ================================
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(conn));
+options.UseNpgsql(conn));
 
 // ================================
-// CORS (Angular frontend)
+// CORS (Angular + Netlify)
 // ================================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngular", policy =>
     {
         policy.WithOrigins(
-            "http://localhost:4200",
-            "https://adorable-travesseiro-9337e2.netlify.app" // your Angular production URL
+        "http://localhost:4200",
+        "https://adorable-travesseiro-9337e2.netlify.app"
         )
         .AllowAnyHeader()
         .AllowAnyMethod();
@@ -61,8 +59,11 @@ var app = builder.Build();
 // ================================
 // MIDDLEWARE
 // ================================
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseRouting();
 
