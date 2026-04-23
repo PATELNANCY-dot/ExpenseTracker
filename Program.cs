@@ -48,17 +48,16 @@ builder.Services.AddCors(options =>
     });
 });
 
-// ================================
+
 // SWAGGER
-// ================================
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// ================================
+
 // MIDDLEWARE
-// ================================
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -71,14 +70,13 @@ app.UseCors("AllowAngular");
 
 app.UseAuthorization();
 
-// ================================
+
 // TEST ROUTE
-// ================================
+
 app.MapGet("/", () => "ExpenseTracker API is running!");
 
-// ================================
 // CONTROLLERS
-// ================================
+
 app.MapControllers();
 
 app.Run();
