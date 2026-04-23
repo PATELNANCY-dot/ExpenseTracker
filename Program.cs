@@ -7,7 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 // RENDER PORT BINDING
 // ================================
 var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
-builder.WebHost.UseUrls($"[http://0.0.0.0:{port}](http://0.0.0.0:{port})");
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 // ================================
 // SERVICES
@@ -25,7 +25,7 @@ Console.WriteLine("DB connection loaded");
 // DATABASE (PostgreSQL)
 // ================================
 builder.Services.AddDbContext<AppDbContext>(options =>
-options.UseNpgsql(conn));
+    options.UseNpgsql(conn));
 
 // ================================
 // CORS
@@ -35,8 +35,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAngular", policy =>
     {
         policy.WithOrigins(
-        "http://localhost:4200",
-        "https://adorable-travesseiro-9337e2.netlify.app"
+            "http://localhost:4200",
+            "https://adorable-travesseiro-9337e2.netlify.app"
         )
         .AllowAnyHeader()
         .AllowAnyMethod();
