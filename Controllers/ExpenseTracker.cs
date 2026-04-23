@@ -11,13 +11,12 @@ namespace ExpenseTracker.Controllers
     {
         private readonly IConfiguration _configuration;
 
-
-    public ExpenseTrackerController(IConfiguration configuration)
+        public ExpenseTrackerController(IConfiguration configuration)
         {
             _configuration = configuration;
         }
 
-        // REGISTER USER  
+        // REGISTER USER
         [HttpPost("register")]
         public IActionResult Register(UserModel model)
         {
@@ -37,14 +36,12 @@ namespace ExpenseTracker.Controllers
             return Ok(new { message = "User Registered Successfully" });
         }
 
-        // LOGIN USER  
+        // LOGIN USER
         [HttpPost("login")]
         public IActionResult Login(LoginDto model)
         {
             try
             {
-                DataTable dt = new DataTable();
-
                 using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection")))
                 {
                     con.Open();
@@ -56,28 +53,26 @@ namespace ExpenseTracker.Controllers
                         cmd.Parameters.AddWithValue("@Email", model.Email);
                         cmd.Parameters.AddWithValue("@Password", model.Password);
 
-                        using (NpgsqlDataAdapter da = new NpgsqlDataAdapter(cmd))
+                        using (var reader = cmd.ExecuteReader())
                         {
-                            da.Fill(dt);
+                            if (reader.Read())
+                            {
+                                var user = new
+                                {
+                                    Id = reader["id"],
+                                    Name = reader["name"],
+                                    Email = reader["email"]
+                                };
+
+                                return Ok(new
+                                {
+                                    success = true,
+                                    message = "Login Successful",
+                                    data = user
+                                });
+                            }
                         }
                     }
-                }
-
-                if (dt.Rows.Count > 0)
-                {
-                    var user = dt.AsEnumerable().Select(row => new
-                    {
-                        Id = row["id"],
-                        Name = row["name"],
-                        Email = row["email"]
-                    }).FirstOrDefault();
-
-                    return Ok(new
-                    {
-                        success = true,
-                        message = "Login Successful",
-                        data = user
-                    });
                 }
 
                 return Unauthorized(new
@@ -96,7 +91,7 @@ namespace ExpenseTracker.Controllers
             }
         }
 
-        // ADD EXPENSE  
+        // ADD EXPENSE
         [HttpPost("add-expense")]
         public IActionResult AddExpense(ExpenseModel model)
         {
@@ -119,14 +114,14 @@ namespace ExpenseTracker.Controllers
             return Ok(new { message = "Added Successfully" });
         }
 
-        // TEST API  
+        // TEST API
         [HttpGet("test")]
         public IActionResult Test()
         {
             return Ok("API WORKING");
         }
 
-        // TEST DATABASE CONNECTION  
+        // TEST DATABASE CONNECTION
         [HttpGet("db-test")]
         public IActionResult DbTest()
         {
@@ -142,7 +137,7 @@ namespace ExpenseTracker.Controllers
             }
         }
 
-
+        // GET USERS (FIXED VERSION)
         [HttpGet("test-users")]
         public IActionResult GetUsers()
         {
@@ -155,24 +150,36 @@ namespace ExpenseTracker.Controllers
                     return StatusCode(500, "Connection string is NULL or EMPTY");
                 }
 
-                DataTable dt = new DataTable();
+                List<object> users = new List<object>();
 
                 using (NpgsqlConnection con = new NpgsqlConnection(connStr))
                 {
                     con.Open();
 
                     using (NpgsqlCommand cmd = new NpgsqlCommand("SELECT * FROM users", con))
-                    using (NpgsqlDataAdapter da = new NpgsqlDataAdapter(cmd))
                     {
-                        da.Fill(dt);
+                        cmd.CommandTimeout = 30;
+
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                users.Add(new
+                                {
+                                    Id = reader["id"],
+                                    Name = reader["name"],
+                                    Email = reader["email"]
+                                });
+                            }
+                        }
                     }
                 }
 
                 return Ok(new
                 {
                     success = true,
-                    count = dt.Rows.Count,
-                    data = dt
+                    count = users.Count,
+                    data = users
                 });
             }
             catch (Exception ex)
@@ -185,7 +192,7 @@ namespace ExpenseTracker.Controllers
             }
         }
 
-
+        // DEBUG CONNECTION
         [HttpGet("debug-full-conn")]
         public IActionResult DebugFullConn()
         {
@@ -196,7 +203,5 @@ namespace ExpenseTracker.Controllers
                 conn
             });
         }
-    }  
-
-
+    }
 }
