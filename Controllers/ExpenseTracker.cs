@@ -311,5 +311,103 @@ namespace ExpenseTracker.Controllers
                 return StatusCode(500, ex.Message);
             }
         }
+
+        [HttpGet("get-expenses/{userId}")]
+        public IActionResult GetExpenses(long userId)
+        {
+            try
+            {
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+
+                var cmd = new NpgsqlCommand(
+                    "SELECT id,title,amount,category,expensedate,notes FROM expenses WHERE userid=@id ORDER BY expensedate DESC", con);
+
+                cmd.Parameters.AddWithValue("@id", userId);
+
+                con.Open();
+
+                var list = new List<object>();
+
+                using var r = cmd.ExecuteReader();
+                while (r.Read())
+                {
+                    list.Add(new
+                    {
+                        id = r["id"],
+                        title = r["title"],
+                        amount = r["amount"],
+                        category = r["category"],
+                        expenseDate = r["expensedate"],
+                        notes = r["notes"]
+                    });
+                }
+
+                return Ok(list);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpGet("get-income/{userId}")]
+        public IActionResult GetIncome(long userId)
+        {
+            try
+            {
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+
+                var cmd = new NpgsqlCommand(
+                    "SELECT id,title,amount,incomedate FROM income WHERE userid=@id", con);
+
+                cmd.Parameters.AddWithValue("@id", userId);
+
+                con.Open();
+
+                var list = new List<object>();
+
+                using var r = cmd.ExecuteReader();
+                while (r.Read())
+                {
+                    list.Add(new
+                    {
+                        id = r["id"],
+                        title = r["title"],
+                        amount = r["amount"],
+                        incomeDate = r["incomedate"]
+                    });
+                }
+
+                return Ok(list);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+
+        [HttpPut("update-expense/{id}")]
+        public IActionResult UpdateExpense(long id, ExpenseModel model)
+        {
+            using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+
+            var cmd = new NpgsqlCommand(@"
+        UPDATE expenses 
+        SET title=@t, amount=@a, category=@c, expensedate=@d, notes=@n
+        WHERE id=@id", con);
+
+            cmd.Parameters.AddWithValue("@t", model.Title);
+            cmd.Parameters.AddWithValue("@a", model.Amount);
+            cmd.Parameters.AddWithValue("@c", model.Category);
+            cmd.Parameters.AddWithValue("@d", model.ExpenseDate);
+            cmd.Parameters.AddWithValue("@n", model.Notes ?? "");
+            cmd.Parameters.AddWithValue("@id", id);
+
+            con.Open();
+            cmd.ExecuteNonQuery();
+
+            return Ok("Updated");
+        }
     }
 }
