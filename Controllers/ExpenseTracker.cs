@@ -6,11 +6,11 @@ namespace ExpenseTracker.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ExpenseTracker : ControllerBase
+    public class ExpenseTrackerController : ControllerBase
     {
         private readonly IConfiguration _configuration;
 
-        public ExpenseTracker(IConfiguration configuration)
+        public ExpenseTrackerController(IConfiguration configuration)
         {
             _configuration = configuration;
         }
