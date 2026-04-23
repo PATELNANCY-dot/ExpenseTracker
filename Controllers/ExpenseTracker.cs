@@ -286,18 +286,28 @@ namespace ExpenseTracker.Controllers
         [HttpPost("save-theme")]
         public IActionResult SaveTheme(ThemeModel model)
         {
-            using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            try
+            {
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            var cmd = new NpgsqlCommand("sp_saveusertheme", con);
-            cmd.CommandType = CommandType.StoredProcedure;
+                var cmd = new NpgsqlCommand("sp_saveusertheme", con);
+                cmd.CommandType = CommandType.StoredProcedure;
 
-            cmd.Parameters.AddWithValue("_userid", model.UserId);
-            cmd.Parameters.AddWithValue("_darkmode", model.DarkMode);
+                cmd.Parameters.AddWithValue("_userid", model.UserId);
+                cmd.Parameters.AddWithValue("_darkmode", model.DarkMode);
 
-            con.Open();
-            cmd.ExecuteNonQuery();
+                con.Open();
+                cmd.ExecuteNonQuery();
 
-            return Ok(new { message = "Theme Saved" });
+                return Ok(new { message = "Theme Saved" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    error = ex.Message
+                });
+            }
         }
 
         [HttpGet("get-theme/{userId}")]
