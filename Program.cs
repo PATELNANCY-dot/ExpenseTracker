@@ -17,7 +17,7 @@ builder.Services.AddControllers();
 
 // CONNECTION STRING (SAFE HANDLING)
 
-var conn = builder.Configuration.GetConnectionString("Default");
+var conn = builder.Configuration.GetConnectionString("DefaultConnection");
 
 // DEBUG (will show in Render logs)
 Console.WriteLine("DB CONNECTION STRING: " + conn);
