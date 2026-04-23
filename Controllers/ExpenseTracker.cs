@@ -96,33 +96,29 @@ namespace ExpenseTracker.Controllers
         [HttpPost("add-expense")]
         public IActionResult AddExpense(ExpenseModel model)
         {
-            using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-            {
-                NpgsqlCommand cmd = new NpgsqlCommand("sp_AddExpense", con);
-                cmd.CommandType = CommandType.StoredProcedure;
+            using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-                cmd.Parameters.AddWithValue("@Title", model.Title);
-                cmd.Parameters.AddWithValue("@Amount", model.Amount);
-                cmd.Parameters.AddWithValue("@Category", model.Category);
-                cmd.Parameters.AddWithValue("@ExpenseDate", model.ExpenseDate);
-                cmd.Parameters.AddWithValue("@UserId", model.UserId);
-                cmd.Parameters.AddWithValue("@Notes", model.Notes ?? string.Empty);
+            var cmd = new NpgsqlCommand("SELECT sp_addexpense(@Title,@Amount,@Category,@ExpenseDate,@UserId,@Notes)", con);
 
-                con.Open();
-                cmd.ExecuteNonQuery();
-            }
+            cmd.Parameters.AddWithValue("@Title", model.Title);
+            cmd.Parameters.AddWithValue("@Amount", model.Amount);
+            cmd.Parameters.AddWithValue("@Category", model.Category);
+            cmd.Parameters.AddWithValue("@ExpenseDate", model.ExpenseDate);
+            cmd.Parameters.AddWithValue("@UserId", model.UserId);
+            cmd.Parameters.AddWithValue("@Notes", model.Notes ?? string.Empty);
+
+            con.Open();
+            cmd.ExecuteNonQuery();
 
             return Ok(new { message = "Added Successfully" });
         }
 
-        // TEST API
         [HttpGet("test")]
         public IActionResult Test()
         {
             return Ok("API WORKING");
         }
 
-        // TEST DATABASE CONNECTION
         [HttpGet("db-test")]
         public IActionResult DbTest()
         {
@@ -138,103 +134,33 @@ namespace ExpenseTracker.Controllers
             }
         }
 
-        // GET USERS (FIXED VERSION)
-        [HttpGet("test-users")]
-        public IActionResult GetUsers()
-        {
-            try
-            {
-                var connStr = _configuration.GetConnectionString("DefaultConnection");
-
-                if (string.IsNullOrEmpty(connStr))
-                {
-                    return StatusCode(500, "Connection string is NULL or EMPTY");
-                }
-
-                List<object> users = new List<object>();
-
-                using (NpgsqlConnection con = new NpgsqlConnection(connStr))
-                {
-                    con.Open();
-
-                    using (NpgsqlCommand cmd = new NpgsqlCommand("SELECT id, name, email FROM users", con))
-                    {
-                        cmd.CommandTimeout = 30;
-
-                        using (var reader = cmd.ExecuteReader())
-                        {
-                            while (reader.Read())
-                            {
-                                users.Add(new
-                                {
-                                    Id = reader["id"],
-                                    Name = reader["name"],
-                                    Email = reader["email"]
-                                });
-                            }
-                        }
-                    }
-                }
-
-                return Ok(new
-                {
-                    success = true,
-                    count = users.Count,
-                    data = users
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    success = false,
-                    error = ex.ToString()
-                });
-            }
-        }
-
-        // DEBUG CONNECTION
-        [HttpGet("debug-full-conn")]
-        public IActionResult DebugFullConn()
-        {
-            var conn = _configuration.GetConnectionString("DefaultConnection");
-
-            return Ok(new
-            {
-                conn
-            });
-        }
-
-
+        // ADD INCOME
         [HttpPost("add-income")]
         public IActionResult AddIncome(IncomeModel model)
         {
-            using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection")))
-            {
-                NpgsqlCommand cmd = new NpgsqlCommand("sp_addincome", con);
-                cmd.CommandType = CommandType.StoredProcedure;
+            using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-                cmd.Parameters.AddWithValue("_title", model.Title);
-                cmd.Parameters.AddWithValue("_amount", model.Amount);
-                cmd.Parameters.AddWithValue("_incomedate", model.IncomeDate);
-                cmd.Parameters.AddWithValue("_userid", model.UserId);
+            var cmd = new NpgsqlCommand("SELECT sp_addincome(@_title,@_amount,@_incomedate,@_userid)", con);
 
-                con.Open();
-                cmd.ExecuteNonQuery();
-            }
+            cmd.Parameters.AddWithValue("@_title", model.Title);
+            cmd.Parameters.AddWithValue("@_amount", model.Amount);
+            cmd.Parameters.AddWithValue("@_incomedate", model.IncomeDate);
+            cmd.Parameters.AddWithValue("@_userid", model.UserId);
+
+            con.Open();
+            cmd.ExecuteNonQuery();
 
             return Ok(new { message = "Income Added Successfully" });
         }
 
+        // DASHBOARD SUMMARY
         [HttpGet("dashboard-summary/{userId}")]
         public IActionResult GetDashboardSummary(long userId)
         {
             using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            var cmd = new NpgsqlCommand("sp_getdashboardsummary", con);
-            cmd.CommandType = CommandType.StoredProcedure;
-
-            cmd.Parameters.AddWithValue("_userid", userId);
+            var cmd = new NpgsqlCommand("SELECT * FROM sp_getdashboardsummary(@_userid)", con);
+            cmd.Parameters.AddWithValue("@_userid", userId);
 
             con.Open();
 
@@ -253,16 +179,14 @@ namespace ExpenseTracker.Controllers
             return Ok();
         }
 
-
+        // USER PROFILE
         [HttpGet("user-profile/{userId}")]
         public IActionResult GetUserProfile(long userId)
         {
             using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            var cmd = new NpgsqlCommand("sp_getuserprofile", con);
-            cmd.CommandType = CommandType.StoredProcedure;
-
-            cmd.Parameters.AddWithValue("_userid", userId);
+            var cmd = new NpgsqlCommand("SELECT * FROM sp_getuserprofile(@_userid)", con);
+            cmd.Parameters.AddWithValue("@_userid", userId);
 
             con.Open();
 
@@ -282,7 +206,7 @@ namespace ExpenseTracker.Controllers
             return NotFound();
         }
 
-
+        // SAVE THEME
         [HttpPost("save-theme")]
         public IActionResult SaveTheme(ThemeModel model)
         {
@@ -290,11 +214,10 @@ namespace ExpenseTracker.Controllers
             {
                 using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-                var cmd = new NpgsqlCommand("sp_saveusertheme", con);
-                cmd.CommandType = CommandType.StoredProcedure;
+                var cmd = new NpgsqlCommand("SELECT sp_saveusertheme(@_userid,@_darkmode)", con);
 
-                cmd.Parameters.AddWithValue("_userid", model.UserId);
-                cmd.Parameters.AddWithValue("_darkmode", model.DarkMode);
+                cmd.Parameters.AddWithValue("@_userid", model.UserId);
+                cmd.Parameters.AddWithValue("@_darkmode", model.DarkMode);
 
                 con.Open();
                 cmd.ExecuteNonQuery();
@@ -310,15 +233,14 @@ namespace ExpenseTracker.Controllers
             }
         }
 
+        // GET THEME
         [HttpGet("get-theme/{userId}")]
         public IActionResult GetTheme(long userId)
         {
             using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            var cmd = new NpgsqlCommand("sp_getusertheme", con);
-            cmd.CommandType = CommandType.StoredProcedure;
-
-            cmd.Parameters.AddWithValue("_userid", userId);
+            var cmd = new NpgsqlCommand("SELECT * FROM sp_getusertheme(@_userid)", con);
+            cmd.Parameters.AddWithValue("@_userid", userId);
 
             con.Open();
 
@@ -335,17 +257,17 @@ namespace ExpenseTracker.Controllers
             return Ok(new { darkMode = false });
         }
 
+        // CHANGE PASSWORD
         [HttpPost("change-password")]
         public IActionResult ChangePassword(ChangePasswordDto model)
         {
             using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            var cmd = new NpgsqlCommand("changepassword", con);
-            cmd.CommandType = CommandType.StoredProcedure;
+            var cmd = new NpgsqlCommand("SELECT changepassword(@_userid,@_currentpassword,@_newpassword)", con);
 
-            cmd.Parameters.AddWithValue("_userid", model.Id);
-            cmd.Parameters.AddWithValue("_currentpassword", model.CurrentPassword);
-            cmd.Parameters.AddWithValue("_newpassword", model.NewPassword);
+            cmd.Parameters.AddWithValue("@_userid", model.Id);
+            cmd.Parameters.AddWithValue("@_currentpassword", model.CurrentPassword);
+            cmd.Parameters.AddWithValue("@_newpassword", model.NewPassword);
 
             con.Open();
 
@@ -354,15 +276,14 @@ namespace ExpenseTracker.Controllers
             return Ok(new { message = result });
         }
 
+        // DELETE ACCOUNT
         [HttpDelete("delete-account/{userId}")]
         public IActionResult DeleteAccount(long userId)
         {
             using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            var cmd = new NpgsqlCommand("deleteuseraccount", con);
-            cmd.CommandType = CommandType.StoredProcedure;
-
-            cmd.Parameters.AddWithValue("_userid", userId);
+            var cmd = new NpgsqlCommand("SELECT deleteuseraccount(@_userid)", con);
+            cmd.Parameters.AddWithValue("@_userid", userId);
 
             con.Open();
             cmd.ExecuteNonQuery();
@@ -370,15 +291,14 @@ namespace ExpenseTracker.Controllers
             return Ok(new { message = "Account Deleted" });
         }
 
+        // CLEAR USER DATA
         [HttpDelete("clear-data/{userId}")]
         public IActionResult ClearUserData(long userId)
         {
             using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            var cmd = new NpgsqlCommand("clearuserdata", con);
-            cmd.CommandType = CommandType.StoredProcedure;
-
-            cmd.Parameters.AddWithValue("_userid", userId);
+            var cmd = new NpgsqlCommand("SELECT clearuserdata(@_userid)", con);
+            cmd.Parameters.AddWithValue("@_userid", userId);
 
             con.Open();
             cmd.ExecuteNonQuery();
