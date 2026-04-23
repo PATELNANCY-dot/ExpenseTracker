@@ -156,7 +156,7 @@ namespace ExpenseTracker.Controllers
                 {
                     con.Open();
 
-                    using (NpgsqlCommand cmd = new NpgsqlCommand("SELECT * FROM users", con))
+                    using (NpgsqlCommand cmd = new NpgsqlCommand("SELECT id, name, email FROM users", con))
                     {
                         cmd.CommandTimeout = 30;
 
