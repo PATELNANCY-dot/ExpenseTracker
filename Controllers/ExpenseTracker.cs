@@ -233,7 +233,8 @@ namespace ExpenseTracker.Controllers
                 con.Open();
                 cmd.ExecuteNonQuery();
 
-                return Ok("Theme Saved");
+
+                return Ok(new { message = "Theme Saved" });
             }
             catch (Exception ex)
             {
