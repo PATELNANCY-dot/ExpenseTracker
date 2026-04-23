@@ -28,7 +28,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 options.UseNpgsql(conn));
 
 // ================================
-// CORS (Angular + Netlify)
+// CORS
 // ================================
 builder.Services.AddCors(options =>
 {
@@ -54,15 +54,15 @@ var app = builder.Build();
 // ================================
 // MIDDLEWARE
 // ================================
+app.UseRouting();
+
+app.UseCors("AllowAngular");
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-app.UseRouting();
-
-app.UseCors("AllowAngular");
 
 app.UseAuthorization();
 
