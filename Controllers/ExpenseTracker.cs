@@ -20,11 +20,13 @@ namespace ExpenseTracker.Controllers
         [HttpPost("register")]
         public IActionResult Register(UserModel model)
         {
-            using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            try
             {
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+
                 string query = "INSERT INTO users (name, email, password) VALUES (@Name, @Email, @Password)";
 
-                NpgsqlCommand cmd = new NpgsqlCommand(query, con);
+                var cmd = new NpgsqlCommand(query, con);
 
                 cmd.Parameters.AddWithValue("@Name", model.Name ?? "");
                 cmd.Parameters.AddWithValue("@Email", model.Email ?? "");
@@ -32,9 +34,13 @@ namespace ExpenseTracker.Controllers
 
                 con.Open();
                 cmd.ExecuteNonQuery();
-            }
 
-            return Ok(new { message = "User Registered Successfully" });
+                return Ok(new { message = "User Registered Successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.ToString() });
+            }
         }
 
         // LOGIN USER
@@ -43,52 +49,39 @@ namespace ExpenseTracker.Controllers
         {
             try
             {
-                using (NpgsqlConnection con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+
+                string query = "SELECT * FROM users WHERE email=@Email AND password=@Password";
+
+                var cmd = new NpgsqlCommand(query, con);
+
+                cmd.Parameters.AddWithValue("@Email", model.Email);
+                cmd.Parameters.AddWithValue("@Password", model.Password);
+
+                con.Open();
+
+                using var reader = cmd.ExecuteReader();
+
+                if (reader.Read())
                 {
-                    con.Open();
-
-                    string query = "SELECT * FROM users WHERE email = @Email AND password = @Password";
-
-                    using (NpgsqlCommand cmd = new NpgsqlCommand(query, con))
+                    return Ok(new
                     {
-                        cmd.Parameters.AddWithValue("@Email", model.Email);
-                        cmd.Parameters.AddWithValue("@Password", model.Password);
-
-                        using (var reader = cmd.ExecuteReader())
+                        success = true,
+                        message = "Login Successful",
+                        data = new
                         {
-                            if (reader.Read())
-                            {
-                                var user = new
-                                {
-                                    Id = reader["id"],
-                                    Name = reader["name"],
-                                    Email = reader["email"]
-                                };
-
-                                return Ok(new
-                                {
-                                    success = true,
-                                    message = "Login Successful",
-                                    data = user
-                                });
-                            }
+                            Id = reader["id"],
+                            Name = reader["name"],
+                            Email = reader["email"]
                         }
-                    }
+                    });
                 }
 
-                return Unauthorized(new
-                {
-                    success = false,
-                    message = "Invalid Credentials"
-                });
+                return Unauthorized(new { success = false, message = "Invalid Credentials" });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = ex.Message
-                });
+                return StatusCode(500, new { error = ex.ToString() });
             }
         }
 
@@ -96,21 +89,28 @@ namespace ExpenseTracker.Controllers
         [HttpPost("add-expense")]
         public IActionResult AddExpense(ExpenseModel model)
         {
-            using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            try
+            {
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            var cmd = new NpgsqlCommand("SELECT sp_addexpense(@Title,@Amount,@Category,@ExpenseDate,@UserId,@Notes)", con);
+                var cmd = new NpgsqlCommand("SELECT sp_addexpense(@Title,@Amount,@Category,@ExpenseDate,@UserId,@Notes)", con);
 
-            cmd.Parameters.AddWithValue("@Title", model.Title);
-            cmd.Parameters.AddWithValue("@Amount", model.Amount);
-            cmd.Parameters.AddWithValue("@Category", model.Category);
-            cmd.Parameters.AddWithValue("@ExpenseDate", model.ExpenseDate);
-            cmd.Parameters.AddWithValue("@UserId", model.UserId);
-            cmd.Parameters.AddWithValue("@Notes", model.Notes ?? string.Empty);
+                cmd.Parameters.AddWithValue("@Title", model.Title);
+                cmd.Parameters.AddWithValue("@Amount", model.Amount);
+                cmd.Parameters.AddWithValue("@Category", model.Category);
+                cmd.Parameters.AddWithValue("@ExpenseDate", model.ExpenseDate);
+                cmd.Parameters.AddWithValue("@UserId", model.UserId);
+                cmd.Parameters.AddWithValue("@Notes", model.Notes ?? "");
 
-            con.Open();
-            cmd.ExecuteNonQuery();
+                con.Open();
+                cmd.ExecuteNonQuery();
 
-            return Ok(new { message = "Added Successfully" });
+                return Ok(new { message = "Added Successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.ToString() });
+            }
         }
 
         [HttpGet("test")]
@@ -126,11 +126,12 @@ namespace ExpenseTracker.Controllers
             {
                 using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
                 con.Open();
+
                 return Ok("DB CONNECTED");
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return StatusCode(500, new { error = ex.ToString() });
             }
         }
 
@@ -138,72 +139,93 @@ namespace ExpenseTracker.Controllers
         [HttpPost("add-income")]
         public IActionResult AddIncome(IncomeModel model)
         {
-            using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            try
+            {
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            var cmd = new NpgsqlCommand("SELECT sp_addincome(@_title,@_amount,@_incomedate,@_userid)", con);
+                var cmd = new NpgsqlCommand("SELECT sp_addincome(@_title,@_amount,@_incomedate,@_userid)", con);
 
-            cmd.Parameters.AddWithValue("@_title", model.Title);
-            cmd.Parameters.AddWithValue("@_amount", model.Amount);
-            cmd.Parameters.AddWithValue("@_incomedate", model.IncomeDate);
-            cmd.Parameters.AddWithValue("@_userid", model.UserId);
+                cmd.Parameters.AddWithValue("@_title", model.Title);
+                cmd.Parameters.AddWithValue("@_amount", model.Amount);
+                cmd.Parameters.AddWithValue("@_incomedate", model.IncomeDate);
+                cmd.Parameters.AddWithValue("@_userid", model.UserId);
 
-            con.Open();
-            cmd.ExecuteNonQuery();
+                con.Open();
+                cmd.ExecuteNonQuery();
 
-            return Ok(new { message = "Income Added Successfully" });
+                return Ok(new { message = "Income Added Successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.ToString() });
+            }
         }
 
         // DASHBOARD SUMMARY
         [HttpGet("dashboard-summary/{userId}")]
         public IActionResult GetDashboardSummary(long userId)
         {
-            using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
-
-            var cmd = new NpgsqlCommand("SELECT * FROM sp_getdashboardsummary(@_userid)", con);
-            cmd.Parameters.AddWithValue("@_userid", userId);
-
-            con.Open();
-
-            using var reader = cmd.ExecuteReader();
-
-            if (reader.Read())
+            try
             {
-                return Ok(new
-                {
-                    totalIncome = reader["totalincome"],
-                    totalExpense = reader["totalexpense"],
-                    balance = reader["balance"]
-                });
-            }
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            return Ok();
+                var cmd = new NpgsqlCommand("SELECT * FROM sp_getdashboardsummary(@_userid)", con);
+                cmd.Parameters.AddWithValue("@_userid", userId);
+
+                con.Open();
+
+                using var reader = cmd.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    return Ok(new
+                    {
+                        totalIncome = reader["totalincome"],
+                        totalExpense = reader["totalexpense"],
+                        balance = reader["balance"]
+                    });
+                }
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.ToString() });
+            }
         }
 
         // USER PROFILE
         [HttpGet("user-profile/{userId}")]
         public IActionResult GetUserProfile(long userId)
         {
-            using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
-
-            var cmd = new NpgsqlCommand("SELECT * FROM sp_getuserprofile(@_userid)", con);
-            cmd.Parameters.AddWithValue("@_userid", userId);
-
-            con.Open();
-
-            using var reader = cmd.ExecuteReader();
-
-            if (reader.Read())
+            try
             {
-                return Ok(new
-                {
-                    id = reader["id"],
-                    name = reader["name"],
-                    email = reader["email"],
-                    createdAt = reader["createdat"]
-                });
-            }
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            return NotFound();
+                var cmd = new NpgsqlCommand("SELECT * FROM sp_getuserprofile(@_userid)", con);
+                cmd.Parameters.AddWithValue("@_userid", userId);
+
+                con.Open();
+
+                using var reader = cmd.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    return Ok(new
+                    {
+                        id = reader["id"],
+                        name = reader["name"],
+                        email = reader["email"],
+                        createdAt = reader["createdat"]
+                    });
+                }
+
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.ToString() });
+            }
         }
 
         // SAVE THEME
@@ -226,10 +248,7 @@ namespace ExpenseTracker.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new
-                {
-                    error = ex.Message
-                });
+                return StatusCode(500, new { error = ex.ToString() });
             }
         }
 
@@ -237,73 +256,98 @@ namespace ExpenseTracker.Controllers
         [HttpGet("get-theme/{userId}")]
         public IActionResult GetTheme(long userId)
         {
-            using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
-
-            var cmd = new NpgsqlCommand("SELECT * FROM sp_getusertheme(@_userid)", con);
-            cmd.Parameters.AddWithValue("@_userid", userId);
-
-            con.Open();
-
-            using var reader = cmd.ExecuteReader();
-
-            if (reader.Read())
+            try
             {
-                return Ok(new
-                {
-                    darkMode = reader["darkmode"]
-                });
-            }
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            return Ok(new { darkMode = false });
+                var cmd = new NpgsqlCommand("SELECT * FROM sp_getusertheme(@_userid)", con);
+                cmd.Parameters.AddWithValue("@_userid", userId);
+
+                con.Open();
+
+                using var reader = cmd.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    return Ok(new { darkMode = reader["darkmode"] });
+                }
+
+                return Ok(new { darkMode = false });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.ToString() });
+            }
         }
 
         // CHANGE PASSWORD
         [HttpPost("change-password")]
         public IActionResult ChangePassword(ChangePasswordDto model)
         {
-            using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            try
+            {
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            var cmd = new NpgsqlCommand("SELECT changepassword(@_userid,@_currentpassword,@_newpassword)", con);
+                var cmd = new NpgsqlCommand("SELECT changepassword(@_userid,@_currentpassword,@_newpassword)", con);
 
-            cmd.Parameters.AddWithValue("@_userid", model.Id);
-            cmd.Parameters.AddWithValue("@_currentpassword", model.CurrentPassword);
-            cmd.Parameters.AddWithValue("@_newpassword", model.NewPassword);
+                cmd.Parameters.AddWithValue("@_userid", model.Id);
+                cmd.Parameters.AddWithValue("@_currentpassword", model.CurrentPassword);
+                cmd.Parameters.AddWithValue("@_newpassword", model.NewPassword);
 
-            con.Open();
+                con.Open();
 
-            var result = cmd.ExecuteScalar();
+                var result = cmd.ExecuteScalar();
 
-            return Ok(new { message = result });
+                return Ok(new { message = result });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.ToString() });
+            }
         }
 
         // DELETE ACCOUNT
         [HttpDelete("delete-account/{userId}")]
         public IActionResult DeleteAccount(long userId)
         {
-            using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            try
+            {
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            var cmd = new NpgsqlCommand("SELECT deleteuseraccount(@_userid)", con);
-            cmd.Parameters.AddWithValue("@_userid", userId);
+                var cmd = new NpgsqlCommand("SELECT deleteuseraccount(@_userid)", con);
+                cmd.Parameters.AddWithValue("@_userid", userId);
 
-            con.Open();
-            cmd.ExecuteNonQuery();
+                con.Open();
+                cmd.ExecuteNonQuery();
 
-            return Ok(new { message = "Account Deleted" });
+                return Ok(new { message = "Account Deleted" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.ToString() });
+            }
         }
 
         // CLEAR USER DATA
         [HttpDelete("clear-data/{userId}")]
         public IActionResult ClearUserData(long userId)
         {
-            using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
+            try
+            {
+                using var con = new NpgsqlConnection(_configuration.GetConnectionString("DefaultConnection"));
 
-            var cmd = new NpgsqlCommand("SELECT clearuserdata(@_userid)", con);
-            cmd.Parameters.AddWithValue("@_userid", userId);
+                var cmd = new NpgsqlCommand("SELECT clearuserdata(@_userid)", con);
+                cmd.Parameters.AddWithValue("@_userid", userId);
 
-            con.Open();
-            cmd.ExecuteNonQuery();
+                con.Open();
+                cmd.ExecuteNonQuery();
 
-            return Ok(new { message = "User Data Cleared" });
+                return Ok(new { message = "User Data Cleared" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.ToString() });
+            }
         }
     }
 }
