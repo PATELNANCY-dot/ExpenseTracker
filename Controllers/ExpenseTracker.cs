@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using ExpenseTracker.Models;
+using MimeKit;
+using MailKit.Net.Smtp;
 
 namespace ExpenseTracker.Controllers
 {
@@ -554,6 +556,199 @@ namespace ExpenseTracker.Controllers
                 cmd.ExecuteNonQuery();
 
                 return Ok(new { message = "Deleted" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+
+        [HttpPost("send-otp")]
+        public IActionResult SendOTP(string email)
+        {
+            try
+            {
+                using var con = new SqlConnection(
+                    _configuration.GetConnectionString("DefaultConnection"));
+
+                // CHECK EMAIL EXISTS
+                var checkCmd = new SqlCommand(
+                    "SELECT COUNT(*) FROM Users WHERE Email=@e", con);
+
+                checkCmd.Parameters.AddWithValue("@e", email);
+
+                con.Open();
+
+                int exists = (int)checkCmd.ExecuteScalar();
+
+                if (exists == 0)
+                {
+                    return BadRequest(new
+                    {
+                        success = false,
+                        message = "Email not found"
+                    });
+                }
+
+                // GENERATE OTP
+                string otp = new Random().Next(100000, 999999).ToString();
+
+                // INSERT OTP
+                var insertCmd = new SqlCommand(@"
+            INSERT INTO PasswordResetOTP
+            (Email, OTPCode, ExpiryTime, IsUsed)
+            VALUES
+            (@email,@otp,@time,0)", con);
+
+                insertCmd.Parameters.AddWithValue("@email", email);
+                insertCmd.Parameters.AddWithValue("@otp", otp);
+                insertCmd.Parameters.AddWithValue("@time",
+                    DateTime.Now.AddMinutes(5));
+
+                insertCmd.ExecuteNonQuery();
+
+                con.Close();
+
+                // SEND EMAIL
+                var message = new MimeMessage();
+
+                message.From.Add(
+                    new MailboxAddress(
+                        "Expense Tracker",
+                        "nancypatel8002@gmail.com"));
+
+                message.To.Add(MailboxAddress.Parse(email));
+
+                message.Subject = "Password Reset OTP";
+
+                message.Body = new TextPart("plain")
+                {
+                    Text = $"Your OTP is: {otp}\n\nValid for 5 minutes."
+                };
+
+                using var client = new MailKit.Net.Smtp.SmtpClient();
+
+                client.Connect(
+                    "smtp.gmail.com",
+                    587,
+                    MailKit.Security.SecureSocketOptions.StartTls);
+
+                client.Authenticate(
+                    "nancypatel8002@gmail.com",
+                    "fxvb dcqb ergw icks");
+
+                client.Send(message);
+
+                client.Disconnect(true);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "OTP sent successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+
+        [HttpPost("verify-otp")]
+        public IActionResult VerifyOTP(string email, string otp)
+        {
+            try
+            {
+                using var con = new SqlConnection(
+                    _configuration.GetConnectionString("DefaultConnection"));
+
+                var cmd = new SqlCommand(@"
+            SELECT *
+            FROM PasswordResetOTP
+            WHERE Email=@e
+            AND OTPCode=@o
+            AND IsUsed=0
+            AND ExpiryTime > GETDATE()", con);
+
+                cmd.Parameters.AddWithValue("@e", email);
+                cmd.Parameters.AddWithValue("@o", otp);
+
+                con.Open();
+
+                using var reader = cmd.ExecuteReader();
+
+                if (reader.Read())
+                {
+                    reader.Close();
+
+                    // MARK OTP USED
+                    var updateCmd = new SqlCommand(@"
+                UPDATE PasswordResetOTP
+                SET IsUsed=1
+                WHERE Email=@e
+                AND OTPCode=@o", con);
+
+                    updateCmd.Parameters.AddWithValue("@e", email);
+                    updateCmd.Parameters.AddWithValue("@o", otp);
+
+                    updateCmd.ExecuteNonQuery();
+
+                    return Ok(new
+                    {
+                        success = true,
+                        message = "OTP verified"
+                    });
+                }
+
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Invalid or expired OTP"
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+
+
+        [HttpPut("reset-password")]
+        public IActionResult ResetPassword(string email, string password)
+        {
+            try
+            {
+                using var con = new SqlConnection(
+                    _configuration.GetConnectionString("DefaultConnection"));
+
+                var cmd = new SqlCommand(@"
+            UPDATE Users
+            SET Password=@p
+            WHERE Email=@e", con);
+
+                cmd.Parameters.AddWithValue("@e", email);
+                cmd.Parameters.AddWithValue("@p", password);
+
+                con.Open();
+
+                int rows = cmd.ExecuteNonQuery();
+
+                if (rows > 0)
+                {
+                    return Ok(new
+                    {
+                        success = true,
+                        message = "Password reset successful"
+                    });
+                }
+
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "User not found"
+                });
             }
             catch (Exception ex)
             {
